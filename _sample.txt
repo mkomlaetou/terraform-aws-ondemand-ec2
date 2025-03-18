@@ -1,0 +1,57 @@
+
+
+module "xyz_host-01" {
+  #source             = "git::https://github.com/mkomlaetou/tf-aws-ondemand_ec2.git?ref=v1.0.2"
+  source                = "../_modules/tf-aws-ondemand_ec2"
+  ec2_name              = var.xyz_sv_01.hostname
+  instance_type         = var.xyz_sv_01.instance_type
+  az                    = var.xyz_sv_01.az
+  subnet_id             = data.aws_subnets.public_03.ids[0]
+  ami_details           = var.ubuntu_os
+  ec2_key_name          = var.xyz_sv_01.ec2_key_name
+  security_group_ids    = [module.xyz_sg.sg_id, module.myip_sg.sg_id]
+  public_subnet         = true
+  elastic_ip            = true
+  instance_profile_name = aws_iam_instance_profile.xyz_s3_role.name
+  user_data_path        = var.xyz_sv_01["user_data_path"]
+  root_vol = {
+    size                  = var.xyz_sv_01.root_vol_size
+    type                  = var.xyz_sv_01.root_vol_type
+    delete_on_termination = true
+  }
+
+  #   additional_vols = var.priv_sv_vols
+  ec2_state  = "running"
+  depends_on = [module.xyz_sg]
+
+}
+
+// xyz_sv_01 general settings variable
+variable "xyz_sv_01" {
+  type = map(string)
+  default = {
+    hostname       = "xyz-sv-01"
+    instance_type  = "t3.small"
+    az             = "eu-west-1a"
+    ec2_key_name   = "c.etou_dev"
+    root_vol_size  = 25
+    root_vol_type  = "gp3"
+    user_data_path = "/user_data/app_install.sh"
+  }
+}
+
+// ubuntu latest image
+variable "ubuntu_os" {
+  default = {
+    platform     = "ubuntu"
+    os_version   = "*22.04"
+    architecture = "amd64"
+  }
+}
+
+output "xyz_sv_01_details" {
+  value = {
+    xyz_sv_01_details = module.loki_host-01.ec2_details
+  }
+}
+
