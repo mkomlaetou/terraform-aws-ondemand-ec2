@@ -1,57 +1,77 @@
 
+module "xyz_hosts" {
+  #source = "git::https://github.com/mkomlaetou/terraform-aws-ondemand-ec2.git?ref=v1.0.0"
+  source = "../_modules/ec2"
 
-module "xyz_host-01" {
-  #source             = "git::https://github.com/mkomlaetou/tf-aws-ondemand_ec2.git?ref=v1.0.2"
-  source                = "../_modules/tf-aws-ondemand_ec2"
-  ec2_name              = var.xyz_sv_01.hostname
-  instance_type         = var.xyz_sv_01.instance_type
-  az                    = var.xyz_sv_01.az
-  subnet_id             = data.aws_subnets.public_03.ids[0]
-  ami_details           = var.ubuntu_os
-  ec2_key_name          = var.xyz_sv_01.ec2_key_name
-  security_group_ids    = [module.xyz_sg.sg_id, module.myip_sg.sg_id]
-  public_subnet         = true
-  elastic_ip            = true
-  instance_profile_name = aws_iam_instance_profile.xyz_s3_role.name
-  user_data_path        = var.xyz_sv_01["user_data_path"]
+  for_each      = var.instance_name_state
+  ami_id        = var.xyz_sv_settings.ami_id
+  #ami_details           = var.ubuntu_os
+  ec2_name      = each.key
+  instance_type = var.xyz_sv_settings.instance_type
+  spot_instance = var.xyz_sv_settings.spot_instance
+  az            = var.xyz_sv_settings.az
+  subnet_id     = module.vpc-01.vpc_details.subnets_id["public-subnet-01"]
+  ec2_key_name       = var.xyz_sv_settings.ec2_key_name
+  security_group_ids = [module.xyz_hosts_sg.sg_id]
+  public_subnet      = true
+  elastic_ip         = true
+  #instance_profile_name = aws_iam_instance_profile.xyz_s3_role.name
+  user_data_path = var.xyz_sv_settings["user_data_path"]
   root_vol = {
-    size                  = var.xyz_sv_01.root_vol_size
-    type                  = var.xyz_sv_01.root_vol_type
-    delete_on_termination = true
+    size                  = var.xyz_sv_settings.root_vol_size
+    type                  = var.xyz_sv_settings.root_vol_type
+    delete_on_termination = false
   }
 
   #   additional_vols = var.priv_sv_vols
-  ec2_state  = "running"
-  depends_on = [module.xyz_sg]
+  ec2_state  = each.value
+  depends_on = [module.xyz_hosts_sg]
 
 }
+
 
 // xyz_sv_01 general settings variable
-variable "xyz_sv_01" {
+variable "xyz_sv_settings" {
   type = map(string)
   default = {
-    hostname       = "xyz-sv-01"
-    instance_type  = "t3.small"
-    az             = "eu-west-1a"
-    ec2_key_name   = "c.etou_dev"
-    root_vol_size  = 25
+    # hostname       = "xyz-sv-01"
+    #ami_id  = "ami-014f91f72b49fb01b"
+    ami_id         = "ami-0fa0e62a0f1a13fe4"
+    az             = "us-east-1a"
+    spot_instance  = "false"
+    instance_type  = "t3.medium"
+    ec2_key_name   = "xyz"
+    root_vol_size  = 30
     root_vol_type  = "gp3"
-    user_data_path = "/user_data/app_install.sh"
+    user_data_path = "/user_data/user_data.sh"
   }
 }
 
-// ubuntu latest image
-variable "ubuntu_os" {
+# // ubuntu latest image
+# variable "ubuntu_os" {
+#   default = {
+#     platform     = "ubuntu"
+#     os_version   = "*22.04"
+#     architecture = "amd64"
+#   }
+# }
+
+
+
+variable "instance_name_state" {
+  type = map(string)
   default = {
-    platform     = "ubuntu"
-    os_version   = "*22.04"
-    architecture = "amd64"
+    xyz-sv-01                    = "running"
+    group-01                    = "running"
+    group-02                    = "running"
+    group-03                   = "running"
+    group-04                   = "running"
   }
 }
 
-output "xyz_sv_01_details" {
+
+output "xyz_host_details" {
   value = {
-    xyz_sv_01_details = module.loki_host-01.ec2_details
+    for k, v in module.xyz_hosts : k => v.ec2_details
   }
 }
-
