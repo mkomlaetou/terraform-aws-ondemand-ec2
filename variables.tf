@@ -147,3 +147,15 @@ variable "allow_private_remote_access" {
   type    = bool
   default = false
 }
+
+
+variable "spot_instance" {
+  type = bool
+  default = false
+}
+
+
+variable "max_spot_price" {
+  type = string
+  default = ""
+}
