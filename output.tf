@@ -6,10 +6,17 @@
 
 output "ec2_details" {
   description = "output ec2 details"
-  value = {
-    instance_id = aws_instance.ec2.id
-    private_ip  = aws_instance.ec2.private_ip
-    public_ip   = var.public_subnet == true ? aws_instance.ec2.public_ip : "N/A"
-    state       = aws_instance.ec2.instance_state
+  value = var.spot_instance == false ? {
+    instance_id = aws_instance.ec2[0].id
+    private_ip  = aws_instance.ec2[0].private_ip
+    public_ip   = var.public_subnet == true ? aws_instance.ec2[0].public_ip : "N/A"
+    state       = aws_instance.ec2[0].instance_state
+    billing      = "ondemand"
+  } : {
+    instance_id = aws_instance.ec2_spot[0].id
+    private_ip  = aws_instance.ec2_spot[0].private_ip
+    public_ip   = var.public_subnet == true ? aws_instance.ec2_spot[0].public_ip : "N/A"
+    state       = aws_instance.ec2_spot[0].instance_state
+    billing     = "spot"
   }
 }
